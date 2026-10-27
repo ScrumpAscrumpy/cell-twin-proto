@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cell Twin Prototype | 细胞数字孪生最小原型</title>
+  <meta name="description" content="一个从单细胞胞内状态出发、用群体行为反演机制的细胞数字孪生原型。包含合成基准、可辨识性实验和真实荧光视频验证。">
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand"><span class="dot"></span> cell<span>·</span>twin</div>
+  <div class="links">
+    <a href="#overview">Overview</a>
+    <a href="#synthetic">Synthetic</a>
+    <a href="#video">Video check</a>
+    <a href="#reproduce">Reproduce</a>
+    <a class="gh" href="https://github.com/ScrumpAscrumpy/cell-twin-proto" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-copy">
+    <p class="eyebrow">Cell twin prototype · v0.1</p>
+    <h1>让细胞群体，<br><span class="grad">自己说出缺了什么。</span></h1>
+    <p class="lede">
+      一个从单细胞胞内状态出发、用群体行为反演机制的细胞数字孪生原型。
+      包含合成基准、四种实验设计下的可辨识性分析，以及一段真实荧光显微视频的初步验证。
+    </p>
+    <div class="cta">
+      <a class="btn primary" href="#video">看真实视频验证</a>
+      <a class="btn ghost" href="https://github.com/ScrumpAscrumpy/cell-twin-proto" target="_blank" rel="noopener">查看源码 ↗</a>
+    </div>
+    <div class="stats">
+      <div><strong>4</strong><span>候选机制</span></div>
+      <div><strong>23</strong><span>群体统计量</span></div>
+      <div><strong>36</strong><span>真实视频帧</span></div>
+      <div><strong>50</strong><span>跟踪细胞</span></div>
+    </div>
+    <div class="badge-row">
+      <span class="badge">NumPy</span>
+      <span class="badge">Pillow</span>
+      <span class="badge">Plotly</span>
+      <span class="badge">GitHub Pages</span>
+      <span class="badge">No black-box ML</span>
+    </div>
+  </div>
+
+  <div class="hero-visual">
+    <div class="frame-card">
+      <img id="heroImg" src="assets/frames/obs_00.jpg" alt="荧光细胞核与检测点">
+      <div class="frame-meta">
+        <span id="heroTag">observed + detections</span>
+        <span>frame explorer below</span>
+      </div>
+    </div>
+    <p style="color:var(--muted);font-size:12px;margin:12px 4px 0;text-align:right;">
+      DeepCell 公开示例 · 512×512 · 36 帧
+    </p>
+  </div>
+</header>
+
+<main>
+
+  <section id="overview">
+    <div class="section-head">
+      <div>
+        <p class="kicker">01 / Overview</p>
+        <h2>四层骨架，一条闭环</h2>
+      </div>
+      <p>目标不是“画一个像细胞的动画”，而是让模型持续被数据约束，并能反过来告诉你：哪里缺了机制。</p>
+    </div>
+
+    <div class="grid-4">
+      <div class="card">
+        <div class="num">01</div>
+        <h3>单细胞孪生</h3>
+        <p>每个细胞带一个看不见的胞内运动驱动 <code class="inline">s</code>，按 <code class="inline">s0 / tau_s / alpha</code> 随局部拥挤度自适应。</p>
+      </div>
+      <div class="card">
+        <div class="num">02</div>
+        <h3>群体 ABM</h3>
+        <p>细胞间有极性对齐、短程排斥和密度反馈；从真实第一帧初始化，而不是随机撒点。</p>
+      </div>
+      <div class="card">
+        <div class="num">03</div>
+        <h3>参数反演</h3>
+        <p>只给 23 个群体统计量，用随机搜索 + Nelder-Mead 拟合，并用不同密度/时间做 held-out 检验。</p>
+      </div>
+      <div class="card">
+        <div class="num">04</div>
+        <h3>可辨识性</h3>
+        <p>对比孤立单细胞、单一密度群体、双密度群体、拥挤脉冲四种实验设计下的 loss 面。</p>
+      </div>
+    </div>
+
+    <div class="callout good">
+      <strong>合成基准的关键结果：</strong>
+      M1（带记忆的拥挤降速）恢复出 <code class="inline">(s0, tau_s, alpha) = (1.03, 2.31, 0.72)</code>，
+      真值为 <code class="inline">(1.0, 2.0, 0.8)</code>；M0/M2 差 1–2 个数量级；
+      M3（无记忆）是强竞争者，说明“检测到机制”不等于“唯一识别机制”。
+    </div>
+  </section>
+
+  <section id="synthetic">
+    <div class="section-head">
+      <div>
+        <p class="kicker">02 / Synthetic benchmark</p>
+        <h2>先证明方法能工作</h2>
+      </div>
+      <p>已知真相的合成数据：先看模型能否选中正确机制，再看它在什么条件下会退化。</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card chart-card">
+        <div id="lossChart" class="chart"></div>
+      </div>
+      <div class="card chart-card">
+        <div id="speedChart" class="chart"></div>
+      </div>
+    </div>
+
+    <div class="card chart-card" style="margin-top:20px;">
+      <div class="tabs" id="heatTabs">
+        <button class="tab active" data-panel="single">孤立单细胞</button>
+        <button class="tab" data-panel="population">群体 · 单一密度</button>
+        <button class="tab" data-panel="two">群体 · 双密度</button>
+        <button class="tab" data-panel="pulse">单细胞 + 拥挤脉冲</button>
+      </div>
+      <div id="heatChart" class="chart tall"></div>
+      <p style="color:var(--muted);font-size:13px;margin:2px 8px 8px;">
+        白色 × 为真值 <code class="inline">(alpha=0.8, tau_s=2.0)</code>。
+        第一幅在 alpha 方向是平的——孤立细胞看不到拥挤增益；
+        群体数据给出 alpha–tau_s 权衡谷；拥挤脉冲把 tau_s 拉回真值附近。
+      </p>
+    </div>
+  </section>
+
+  <section id="video">
+    <div class="section-head">
+      <div>
+        <p class="kicker">03 / Real video check</p>
+        <h2>能跑通，但还不会说谎</h2>
+      </div>
+      <p>一段真实的荧光细胞核延时视频：读帧、分割、追踪、统计、拟合、仿真。结论比“拟合得好”更有价值。</p>
+    </div>
+
+    <div class="explorer">
+      <div>
+        <div class="viewer">
+          <img id="frameImg" src="assets/frames/obs_00.jpg" alt="视频帧与检测/仿真叠加">
+          <div class="viewer-bar">
+            <button class="icon-btn" id="playBtn" aria-label="播放/暂停">▶</button>
+            <input id="frameSlider" type="range" min="0" max="11" value="0" aria-label="视频帧">
+            <span id="frameLabel" style="font-family:var(--mono);font-size:12px;color:var(--muted);min-width:74px;text-align:right;">t = 0</span>
+          </div>
+        </div>
+        <div class="pills" id="modePills">
+          <button class="pill active" data-mode="obs">观察 + 检测点</button>
+          <button class="pill" data-mode="sim">M1 仿真</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>这次验证的数字</h3>
+        <div class="metrics">
+          <div class="metric"><strong>36</strong><span>使用帧数（每 2 帧取 1）</span></div>
+          <div class="metric"><strong>50</strong><span>初始细胞数</span></div>
+          <div class="metric"><strong>100</strong><span>轨迹数</span></div>
+          <div class="metric"><strong>49</strong><span>长度 ≥ 60% 的轨迹</span></div>
+        </div>
+        <p style="color:var(--muted);font-size:13px;margin:0 0 10px;">
+          每帧检出 49–66 个细胞核，中位数 56.5。分割用 Otsu + 连通域，追踪用贪心最近邻；它们只用于 QC 和可视化，拟合用的是不依赖长期轨迹身份的帧级统计量。
+        </p>
+        <table>
+          <thead><tr><th>模型</th><th>loss</th><th>关键参数</th></tr></thead>
+          <tbody id="fitTable"></tbody>
+        </table>
+        <div class="callout">
+          <strong>关键发现：速度-密度关系的符号相反。</strong>
+          观测到的速度随密度<em>上升</em>（0.24 → 0.37），而 demo 的机制假设是“越挤越慢”。
+          最优模型是 M3（近似常数速度），不是 M1。这不是代码失败，而是数据质量/观测变量/模型假设不匹配。
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2" style="margin-top:20px;">
+      <div class="card chart-card">
+        <div id="videoSpeedChart" class="chart"></div>
+      </div>
+      <div class="card chart-card">
+        <div id="videoGChart" class="chart"></div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:20px;">
+      <strong>为什么不能直接把它当成“仿生成功”？</strong>
+      检测 Completeness 与密度相关：密集区核更亮、更容易被检出和关联；稀疏区暗核漏检，速度被低估。
+      再加上“核运动 ≠ 全细胞运动”，以及没有扰动时 <code class="inline">alpha–tau_s</code> 的退化，
+      当前结果只能作为<strong>数据质量与可辨识性检查器</strong>，不是生物学结论。
+      详见
+      <a href="https://github.com/ScrumpAscrumpy/cell-twin-proto/blob/main/VIDEO_REPORT.md" target="_blank" rel="noopener">VIDEO_REPORT.md</a>。
+    </div>
+  </section>
+
+  <section id="reproduce">
+    <div class="section-head">
+      <div>
+        <p class="kicker">04 / Reproduce</p>
+        <h2>在自己的机器上跑一遍</h2>
+      </div>
+      <p>只需要 Python、NumPy 和 Pillow；没有 PyTorch、没有 scipy、没有 matplotlib。</p>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h3>合成基准</h3>
+        <pre><code>cd cell-twin-proto
+python src/run_demo.py --quick   # 约 75 秒
+python src/run_demo.py           # 约 3 分钟</code></pre>
+        <p style="margin-top:12px;">输出：<code class="inline">outputs/figures/</code> 与 <code class="inline">outputs/results.json</code>。</p>
+      </div>
+      <div class="card">
+        <h3>真实视频验证</h3>
+        <pre><code># 先下载示例视频
+curl -L -o data/deepcell_raw_docs.gif \
+  https://raw.githubusercontent.com/vanvalenlab/deepcell-tf/HEAD/docs/images/raw.gif
+
+python src/video_pipeline.py --max-frames 36 --step 2 --size 512</code></pre>
+        <p style="margin-top:12px;">输出：<code class="inline">outputs_video/figures/</code> 与 <code class="inline">outputs_video/results.json</code>。</p>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:20px;">
+      <h3>仓库入口</h3>
+      <p>
+        <a href="https://github.com/ScrumpAscrumpy/cell-twin-proto" target="_blank" rel="noopener">GitHub 仓库</a>
+        ·
+        <a href="https://github.com/ScrumpAscrumpy/cell-twin-proto/blob/main/README.md" target="_blank" rel="noopener">README</a>
+        ·
+        <a href="https://github.com/ScrumpAscrumpy/cell-twin-proto/blob/main/VIDEO_REPORT.md" target="_blank" rel="noopener">视频验证报告</a>
+        ·
+        <a href="https://github.com/ScrumpAscrumpy/cell-twin-proto/blob/main/src/model.py" target="_blank" rel="noopener">model.py</a>
+        ·
+        <a href="https://github.com/ScrumpAscrumpy/cell-twin-proto/blob/main/src/video_pipeline.py" target="_blank" rel="noopener">video_pipeline.py</a>
+      </p>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div>Cell Twin Prototype · 合成数据 + 公开演示视频 · 不是临床或生物学结论</div>
+  <div>Data: <a href="https://github.com/vanvalenlab/deepcell-tf" target="_blank" rel="noopener">DeepCell</a> docs raw.gif · Built with NumPy, Pillow, Plotly</div>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

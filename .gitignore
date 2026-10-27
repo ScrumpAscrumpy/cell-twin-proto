@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.DS_Store
+
+# Local smoke-test outputs
+outputs_quick/
+
+# Third-party demo video (see data/README.md)
+data/*.gif
+data/*.zip
+
+# Local scratch
+*.log
