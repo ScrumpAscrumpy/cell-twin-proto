@@ -1,5 +1,9 @@
 # 细胞数字孪生最小原型（Cell Twin Prototype）
 
+**在线交互页面**：<https://scrumpascrumpy.github.io/cell-twin-proto/>
+
+**源码仓库**：<https://github.com/ScrumpAscrumpy/cell-twin-proto>
+
 一个**纯 NumPy + Pillow、可直接运行**的最小原型，用来验证上一轮讨论里的核心逻辑：
 
 > 单细胞数字孪生 → 群体 ABM → 用群体行为反演胞内机制 → 可辨识性与模型选择
