@@ -178,7 +178,7 @@ h1 {
 }
 .frame-meta span:first-child { color: var(--accent); }
 
-section { max-width: 1200px; margin: 0 auto; padding: 64px 28px; }
+section { max-width: 1200px; margin: 0 auto; padding: 64px 28px; scroll-margin-top: 86px; }
 
 .section-head {
   display: flex;
